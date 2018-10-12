@@ -28,7 +28,42 @@ func TestDispatchCtxCanUseNormalHandlers(t *testing.T) {
 		return nil
 	}
 
-	err := bus.DispatchCtx(context.Background(), &testQuery{})
+	preHandlerCallCount := 0
+	preHandler := func(query *testQuery) error {
+		preHandlerCallCount++
+		return nil
+	}
+
+	preHandlerCtxCallCount := 0
+	preHandlerCtx := func(ctx context.Context, query *testQuery) error {
+		preHandlerCtxCallCount++
+		return nil
+	}
+
+	postHandlerCallCount := 0
+	postHandler := func(err error, query *testQuery) error {
+		postHandlerCallCount++
+		return err
+	}
+
+	postHandlerCtxCallCount := 0
+	postHandlerCtx := func(ctx context.Context, err error, query *testQuery) error {
+		postHandlerCtxCallCount++
+		return err
+	}
+
+	bus.AddPreDispatchHook(preHandler)
+	bus.AddPreDispatchHook(preHandlerCtx)
+	err := bus.AddPostDispatchHook(postHandler)
+	if err != nil {
+		t.Errorf("expected error to be nil, but was %v", err)
+	}
+	err = bus.AddPostDispatchHook(postHandlerCtx)
+	if err != nil {
+		t.Errorf("expected error to be nil, but was %v", err)
+	}
+
+	err = bus.DispatchCtx(context.Background(), &testQuery{})
 	if err != ErrHandlerNotFound {
 		t.Errorf("expected bus to return HandlerNotFound is no handler is registered")
 	}
@@ -42,12 +77,44 @@ func TestDispatchCtxCanUseNormalHandlers(t *testing.T) {
 			t.Errorf("Expected normal handler to be called 1 time. was called %d", handlerCallCount)
 		}
 
+		if preHandlerCallCount != 1 {
+			t.Errorf("Expected pre handler to be called 1 time. was called %d", preHandlerCallCount)
+		}
+
+		if preHandlerCtxCallCount != 1 {
+			t.Errorf("Expected pre handler ctx to be called 1 time. was called %d", preHandlerCtxCallCount)
+		}
+
+		if postHandlerCallCount != 1 {
+			t.Errorf("Expected post handler to be called 1 time. was called %d", postHandlerCallCount)
+		}
+
+		if postHandlerCtxCallCount != 1 {
+			t.Errorf("Expected post handler ctx to be called 1 time. was called %d", postHandlerCtxCallCount)
+		}
+
 		t.Run("when a ctx handler is registered", func(t *testing.T) {
 			bus.AddHandlerCtx(handlerWithCtx)
 			bus.Dispatch(&testQuery{})
 
 			if handlerWithCtxCallCount != 1 {
 				t.Errorf("Expected ctx handler to be called 1 time. was called %d", handlerWithCtxCallCount)
+			}
+
+			if preHandlerCallCount != 2 {
+				t.Errorf("Expected pre handler to be called 2 times. was called %d", preHandlerCallCount)
+			}
+
+			if preHandlerCtxCallCount != 2 {
+				t.Errorf("Expected pre handler ctx to be called 2 times. was called %d", preHandlerCtxCallCount)
+			}
+
+			if postHandlerCallCount != 2 {
+				t.Errorf("Expected post handler to be called 2 times. was called %d", postHandlerCallCount)
+			}
+
+			if postHandlerCtxCallCount != 2 {
+				t.Errorf("Expected post handler ctx to be called 2 times. was called %d", postHandlerCtxCallCount)
 			}
 		})
 	})

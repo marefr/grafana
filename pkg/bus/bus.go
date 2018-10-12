@@ -32,6 +32,9 @@ type Bus interface {
 	AddEventListener(handler HandlerFunc)
 	AddWildcardListener(handler HandlerFunc)
 
+	AddPreDispatchHook(preDispatchHandler HandlerFunc)
+	AddPostDispatchHook(postDispatchHandler HandlerFunc) error
+
 	// SetTransactionManager allows the user to replace the internal
 	// noop TransactionManager that is responsible for manageing
 	// transactions in `InTransaction`
@@ -43,11 +46,13 @@ func (b *InProcBus) InTransaction(ctx context.Context, fn func(ctx context.Conte
 }
 
 type InProcBus struct {
-	handlers          map[string]HandlerFunc
-	handlersWithCtx   map[string]HandlerFunc
-	listeners         map[string][]HandlerFunc
-	wildcardListeners []HandlerFunc
-	txMng             TransactionManager
+	handlers             map[string]HandlerFunc
+	handlersWithCtx      map[string]HandlerFunc
+	listeners            map[string][]HandlerFunc
+	preDispatchHandlers  map[string][]*hookHandler
+	postDispatchHandlers map[string][]*hookHandler
+	wildcardListeners    []HandlerFunc
+	txMng                TransactionManager
 }
 
 // temp stuff, not sure how to handle bus instance, and init yet
@@ -57,6 +62,8 @@ func New() Bus {
 	bus := &InProcBus{}
 	bus.handlers = make(map[string]HandlerFunc)
 	bus.handlersWithCtx = make(map[string]HandlerFunc)
+	bus.preDispatchHandlers = make(map[string][]*hookHandler)
+	bus.postDispatchHandlers = make(map[string][]*hookHandler)
 	bus.listeners = make(map[string][]HandlerFunc)
 	bus.wildcardListeners = make([]HandlerFunc, 0)
 	bus.txMng = &noopTransactionManager{}
@@ -108,14 +115,52 @@ func (b *InProcBus) Dispatch(msg Msg) error {
 		return ErrHandlerNotFound
 	}
 
+	ctx := context.Background()
+
+	if hooks, exists := b.preDispatchHandlers[msgName]; exists {
+		for _, h := range hooks {
+			var params = []reflect.Value{}
+			if h.requiresCtx {
+				params = append(params, reflect.ValueOf(ctx))
+			}
+			params = append(params, reflect.ValueOf(msg))
+			ret := reflect.ValueOf(h.handler).Call(params)
+			err := ret[0].Interface()
+			if err != nil {
+				return err.(error)
+			}
+		}
+	}
+
 	var params = []reflect.Value{}
 	if withCtx {
-		params = append(params, reflect.ValueOf(context.Background()))
+		params = append(params, reflect.ValueOf(ctx))
 	}
 	params = append(params, reflect.ValueOf(msg))
 
 	ret := reflect.ValueOf(handler).Call(params)
+	var returnedError error
 	err := ret[0].Interface()
+	if err != nil {
+		returnedError = err.(error)
+	}
+
+	if hooks, exists := b.postDispatchHandlers[msgName]; exists {
+		for _, h := range hooks {
+			var params = []reflect.Value{}
+			if h.requiresCtx {
+				params = append(params, reflect.ValueOf(ctx))
+			}
+			params = append(params, reflect.ValueOf(&returnedError).Elem())
+			params = append(params, reflect.ValueOf(msg))
+			ret = reflect.ValueOf(h.handler).Call(params)
+			err := ret[0].Interface()
+			if err != nil {
+				returnedError = err.(error)
+			}
+		}
+	}
+
 	if err == nil {
 		return nil
 	}
@@ -172,6 +217,57 @@ func (b *InProcBus) AddEventListener(handler HandlerFunc) {
 		b.listeners[eventName] = make([]HandlerFunc, 0)
 	}
 	b.listeners[eventName] = append(b.listeners[eventName], handler)
+}
+
+type hookHandler struct {
+	handler     HandlerFunc
+	requiresCtx bool
+}
+
+func (b *InProcBus) AddPreDispatchHook(preDispatchHandler HandlerFunc) {
+	handlerType := reflect.TypeOf(preDispatchHandler)
+	var msgTypeName string
+	requiresCtx := false
+
+	if handlerType.NumIn() > 1 {
+		msgTypeName = handlerType.In(1).Elem().Name()
+		requiresCtx = true
+	} else {
+		msgTypeName = handlerType.In(0).Elem().Name()
+	}
+
+	if _, exists := b.preDispatchHandlers[msgTypeName]; !exists {
+		b.preDispatchHandlers[msgTypeName] = []*hookHandler{}
+	}
+
+	b.preDispatchHandlers[msgTypeName] = append(b.preDispatchHandlers[msgTypeName], &hookHandler{
+		handler:     preDispatchHandler,
+		requiresCtx: requiresCtx,
+	})
+}
+
+func (b *InProcBus) AddPostDispatchHook(postDispatchHandler HandlerFunc) error {
+	handlerType := reflect.TypeOf(postDispatchHandler)
+	var msgTypeName string
+	requiresCtx := false
+
+	if handlerType.NumIn() > 2 {
+		msgTypeName = handlerType.In(2).Elem().Name()
+		requiresCtx = true
+	} else {
+		msgTypeName = handlerType.In(1).Elem().Name()
+	}
+
+	if _, exists := b.preDispatchHandlers[msgTypeName]; !exists {
+		b.postDispatchHandlers[msgTypeName] = []*hookHandler{}
+	}
+
+	b.postDispatchHandlers[msgTypeName] = append(b.postDispatchHandlers[msgTypeName], &hookHandler{
+		handler:     postDispatchHandler,
+		requiresCtx: requiresCtx,
+	})
+
+	return nil
 }
 
 // Package level functions
