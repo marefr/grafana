@@ -29,6 +29,10 @@ func (hs *HTTPServer) registerRoutes() {
 	r.Get("/login", hs.LoginView)
 	r.Get("/invite/:code", hs.Index)
 
+	// api docs
+	r.Get("/docs", hs.Redoc)
+	r.Get("/swagger", hs.Swagger)
+
 	// authed views
 	r.Get("/profile/", reqSignedIn, hs.Index)
 	r.Get("/profile/password", reqSignedIn, hs.Index)
