@@ -137,6 +137,16 @@ func (hs *HTTPServer) registerRoutes() {
 
 		// users (admin permission required)
 		apiRoute.Group("/users", func(usersRoute routing.RouteRegister) {
+			// swagger:route GET /users global_users getAdminUsers
+			//
+			// Get users
+			//
+			// Description goes here
+			//
+			// Responses:
+			// 200: okResponse
+			// 401: unauthorisedError
+			// 403: forbiddenError
 			usersRoute.Get("/", Wrap(SearchUsers))
 			usersRoute.Get("/search", Wrap(SearchUsersWithPaging))
 			usersRoute.Get("/:id", Wrap(GetUserByID))
@@ -365,6 +375,16 @@ func (hs *HTTPServer) registerRoutes() {
 
 	// admin api
 	r.Group("/api/admin", func(adminRoute routing.RouteRegister) {
+		// swagger:route GET /admin/settings adminSettings getAdminSettings
+		//
+		// Get settings
+		//
+		// Only works with Basic Authentication (username and password)
+		//
+		// Responses:
+		// 200: okResponse
+		// 401: unauthorisedError
+		// 403: forbiddenError
 		adminRoute.Get("/settings", AdminGetSettings)
 		adminRoute.Post("/users", bind(dtos.AdminCreateUserForm{}), AdminCreateUser)
 		adminRoute.Put("/users/:id/password", bind(dtos.AdminUpdateUserPasswordForm{}), AdminUpdateUserPassword)

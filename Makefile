@@ -49,3 +49,7 @@ clean:
 
 node_modules: package.json yarn.lock
 	yarn install --pure-lockfile --no-progress
+
+apidocs:
+# install swagger binary: go get -u github.com/go-swagger/go-swagger/cmd/swagger
+	swagger generate spec -b ./pkg/cmd/grafana-server -o public/swagger.json -m

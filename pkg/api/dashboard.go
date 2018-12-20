@@ -48,6 +48,32 @@ func dashboardGuardianResponse(err error) Response {
 	return Error(403, "Access denied to this dashboard", nil)
 }
 
+// GetDashboard swagger:route GET /dashboards/uid/{uid} dashboards getDashboardByUID
+//
+// Get dashboard by uid
+//
+// Will return the dashboard given the dashboard unique identifier (uid).
+//
+// Responses:
+// 200: DashboardResponse
+// 401: unauthorisedError
+// 403: forbiddenError
+// 404: notFoundError
+
+// GetDashboard swagger:route GET /dashboards/db/{slug} dashboards getDashboardBySlug
+//
+// Get dashboard by slug
+//
+// Deprecated starting from Grafana v5.0. Please update to use the new Get dashboard by uid resource instead.
+//
+// Will return the dashboard given the dashboard slug. Slug is the url friendly version of the dashboard title.
+// If there exists multiple dashboards with the same slug, one of them will be returned in the response.
+//
+// Responses:
+// 200: DashboardResponse
+// 401: unauthorisedError
+// 403: forbiddenError
+// 404: notFoundError
 func GetDashboard(c *m.ReqContext) Response {
 	dash, rsp := getDashboardHelper(c.OrgId, c.Params(":slug"), 0, c.Params(":uid"))
 	if rsp != nil {
@@ -154,6 +180,20 @@ func getDashboardHelper(orgID int64, slug string, id int64, uid string) (*m.Dash
 	return query.Result, nil
 }
 
+// DeleteDashboard swagger:route DELETE /dashboards/db/{slug} dashboards deleteDashboardBySlug
+//
+// Delete dashboard by slug
+//
+// Deprecated starting from Grafana v5.0. Please update to use the Delete dashboard by uid resource instead.
+//
+// Will delete the dashboard given the specified slug. Slug is the url friendly version of the dashboard title.
+//
+// Responses:
+// 200: okResponse
+// 401: unauthorisedError
+// 403: forbiddenError
+// 404: notFoundError
+// 412: genericError
 func DeleteDashboard(c *m.ReqContext) Response {
 	query := m.GetDashboardsBySlugQuery{OrgId: c.OrgId, Slug: c.Params(":slug")}
 
@@ -186,6 +226,17 @@ func DeleteDashboard(c *m.ReqContext) Response {
 	})
 }
 
+// DeleteDashboardByUID swagger:route DELETE /dashboards/uid/{uid} dashboards deleteDashboardByUID
+//
+// Delete dashboard by uid
+//
+// Will delete the dashboard given the specified unique identifier (uid).
+//
+// Responses:
+// 200: okResponse
+// 401: unauthorisedError
+// 403: forbiddenError
+// 404: notFoundError
 func DeleteDashboardByUID(c *m.ReqContext) Response {
 	dash, rsp := getDashboardHelper(c.OrgId, "", 0, c.Params(":uid"))
 	if rsp != nil {

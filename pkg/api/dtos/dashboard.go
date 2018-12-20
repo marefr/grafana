@@ -31,27 +31,38 @@ type DashboardMeta struct {
 	Provisioned bool      `json:"provisioned"`
 }
 
+// DashboardResponse
+// It is the full dashboard response with metadata.
+//
+// swagger:model DashboardResponse
 type DashboardFullWithMeta struct {
-	Meta      DashboardMeta    `json:"meta"`
+	// Dashboard metadata
+	Meta DashboardMeta `json:"meta"`
+
+	// JSON dashboard model
 	Dashboard *simplejson.Json `json:"dashboard"`
 }
 
+// swagger:ignore
 type DashboardRedirect struct {
 	RedirectUri string `json:"redirectUri"`
 }
 
+// swagger:ignore
 type CalculateDiffOptions struct {
 	Base     CalculateDiffTarget `json:"base" binding:"Required"`
 	New      CalculateDiffTarget `json:"new" binding:"Required"`
 	DiffType string              `json:"diffType" binding:"Required"`
 }
 
+// swagger:ignore
 type CalculateDiffTarget struct {
 	DashboardId      int64            `json:"dashboardId"`
 	Version          int              `json:"version"`
 	UnsavedDashboard *simplejson.Json `json:"unsavedDashboard"`
 }
 
+// swagger:ignore
 type RestoreDashboardVersionCommand struct {
 	Version int `json:"version" binding:"Required"`
 }

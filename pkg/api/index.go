@@ -361,6 +361,24 @@ func (hs *HTTPServer) Index(c *m.ReqContext) {
 	c.HTML(200, "index", data)
 }
 
+func (hs *HTTPServer) Redoc(c *m.ReqContext) {
+	data, err := hs.setIndexViewData(c)
+	if err != nil {
+		c.Handle(500, "Failed to get settings", err)
+		return
+	}
+	c.HTML(200, "redoc", data)
+}
+
+func (hs *HTTPServer) Swagger(c *m.ReqContext) {
+	data, err := hs.setIndexViewData(c)
+	if err != nil {
+		c.Handle(500, "Failed to get settings", err)
+		return
+	}
+	c.HTML(200, "swagger", data)
+}
+
 func (hs *HTTPServer) NotFoundHandler(c *m.ReqContext) {
 	if c.IsApiRequest() {
 		c.JsonApiErr(404, "Not found", nil)

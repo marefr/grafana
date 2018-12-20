@@ -1,0 +1,427 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "The Grafana backend exposes an HTTP API, the same API is used by the frontend to do\neverything from saving dashboards, creating users and updating data sources.",
+    "title": "Grafana HTTP API.",
+    "contact": {
+      "name": "Grafana Labs",
+      "url": "https://grafana.com",
+      "email": "hello@grafana.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "http://opensource.org/licenses/MIT"
+    },
+    "version": "0.0.1"
+  },
+  "host": "localhost:3000",
+  "basePath": "/api",
+  "paths": {
+    "/admin/settings": {
+      "get": {
+        "description": "Only works with Basic Authentication (username and password)",
+        "tags": [
+          "adminSettings"
+        ],
+        "summary": "Get settings",
+        "operationId": "getAdminSettings",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/okResponse"
+          },
+          "401": {
+            "$ref": "#/responses/unauthorisedError"
+          },
+          "403": {
+            "$ref": "#/responses/forbiddenError"
+          }
+        }
+      }
+    },
+    "/dashboards/db/{slug}": {
+      "get": {
+        "description": "Deprecated starting from Grafana v5.0. Please update to use the new Get dashboard by uid resource instead.\n\nWill return the dashboard given the dashboard slug. Slug is the url friendly version of the dashboard title.\nIf there exists multiple dashboards with the same slug, one of them will be returned in the response.",
+        "tags": [
+          "dashboards"
+        ],
+        "summary": "Get dashboard by slug",
+        "operationId": "getDashboardBySlug",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "Slug",
+            "description": "The slug of the dashboard",
+            "name": "slug",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DashboardResponse",
+            "schema": {
+              "$ref": "#/definitions/DashboardResponse"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/unauthorisedError"
+          },
+          "403": {
+            "$ref": "#/responses/forbiddenError"
+          },
+          "404": {
+            "$ref": "#/responses/notFoundError"
+          }
+        }
+      },
+      "delete": {
+        "description": "Deprecated starting from Grafana v5.0. Please update to use the Delete dashboard by uid resource instead.\n\nWill delete the dashboard given the specified slug. Slug is the url friendly version of the dashboard title.",
+        "tags": [
+          "dashboards"
+        ],
+        "summary": "Delete dashboard by slug",
+        "operationId": "deleteDashboardBySlug",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "Slug",
+            "description": "The slug of the dashboard",
+            "name": "slug",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/okResponse"
+          },
+          "401": {
+            "$ref": "#/responses/unauthorisedError"
+          },
+          "403": {
+            "$ref": "#/responses/forbiddenError"
+          },
+          "404": {
+            "$ref": "#/responses/notFoundError"
+          },
+          "412": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    },
+    "/dashboards/uid/{uid}": {
+      "get": {
+        "description": "Will return the dashboard given the dashboard unique identifier (uid).",
+        "tags": [
+          "dashboards"
+        ],
+        "summary": "Get dashboard by uid",
+        "operationId": "getDashboardByUID",
+        "parameters": [
+          {
+            "maxLength": 40,
+            "type": "string",
+            "x-go-name": "Uid",
+            "description": "The unique identifier (uid) of a dashboard can be used for uniquely identify a dashboard between multiple Grafana installs.\nIt’s automatically generated if not provided when creating a dashboard. The uid allows having consistent URL’s for accessing\ndashboards and when syncing dashboards between multiple Grafana installs. This means that changing the title of a dashboard\nwill not break any bookmarked links to that dashboard.",
+            "name": "uid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DashboardResponse",
+            "schema": {
+              "$ref": "#/definitions/DashboardResponse"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/unauthorisedError"
+          },
+          "403": {
+            "$ref": "#/responses/forbiddenError"
+          },
+          "404": {
+            "$ref": "#/responses/notFoundError"
+          }
+        }
+      },
+      "delete": {
+        "description": "Will delete the dashboard given the specified unique identifier (uid).",
+        "tags": [
+          "dashboards"
+        ],
+        "summary": "Delete dashboard by uid",
+        "operationId": "deleteDashboardByUID",
+        "parameters": [
+          {
+            "maxLength": 40,
+            "type": "string",
+            "x-go-name": "Uid",
+            "description": "The unique identifier (uid) of a dashboard can be used for uniquely identify a dashboard between multiple Grafana installs.\nIt’s automatically generated if not provided when creating a dashboard. The uid allows having consistent URL’s for accessing\ndashboards and when syncing dashboards between multiple Grafana installs. This means that changing the title of a dashboard\nwill not break any bookmarked links to that dashboard.",
+            "name": "uid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/okResponse"
+          },
+          "401": {
+            "$ref": "#/responses/unauthorisedError"
+          },
+          "403": {
+            "$ref": "#/responses/forbiddenError"
+          },
+          "404": {
+            "$ref": "#/responses/notFoundError"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "description": "Description goes here",
+        "tags": [
+          "global_users"
+        ],
+        "summary": "Get users",
+        "operationId": "getAdminUsers",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/okResponse"
+          },
+          "401": {
+            "$ref": "#/responses/unauthorisedError"
+          },
+          "403": {
+            "$ref": "#/responses/forbiddenError"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "DashboardMeta": {
+      "type": "object",
+      "properties": {
+        "canAdmin": {
+          "type": "boolean",
+          "x-go-name": "CanAdmin"
+        },
+        "canEdit": {
+          "type": "boolean",
+          "x-go-name": "CanEdit"
+        },
+        "canSave": {
+          "type": "boolean",
+          "x-go-name": "CanSave"
+        },
+        "canStar": {
+          "type": "boolean",
+          "x-go-name": "CanStar"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "Created"
+        },
+        "createdBy": {
+          "type": "string",
+          "x-go-name": "CreatedBy"
+        },
+        "expires": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "Expires"
+        },
+        "folderId": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "FolderId"
+        },
+        "folderTitle": {
+          "type": "string",
+          "x-go-name": "FolderTitle"
+        },
+        "folderUrl": {
+          "type": "string",
+          "x-go-name": "FolderUrl"
+        },
+        "hasAcl": {
+          "type": "boolean",
+          "x-go-name": "HasAcl"
+        },
+        "isFolder": {
+          "type": "boolean",
+          "x-go-name": "IsFolder"
+        },
+        "isHome": {
+          "type": "boolean",
+          "x-go-name": "IsHome"
+        },
+        "isSnapshot": {
+          "type": "boolean",
+          "x-go-name": "IsSnapshot"
+        },
+        "isStarred": {
+          "type": "boolean",
+          "x-go-name": "IsStarred"
+        },
+        "provisioned": {
+          "type": "boolean",
+          "x-go-name": "Provisioned"
+        },
+        "slug": {
+          "type": "string",
+          "x-go-name": "Slug"
+        },
+        "type": {
+          "type": "string",
+          "x-go-name": "Type"
+        },
+        "updated": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "Updated"
+        },
+        "updatedBy": {
+          "type": "string",
+          "x-go-name": "UpdatedBy"
+        },
+        "url": {
+          "type": "string",
+          "x-go-name": "Url"
+        },
+        "version": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Version"
+        }
+      },
+      "x-go-package": "github.com/grafana/grafana/pkg/api/dtos"
+    },
+    "DashboardResponse": {
+      "description": "DashboardResponse\nIt is the full dashboard response with metadata.",
+      "type": "object",
+      "properties": {
+        "dashboard": {
+          "$ref": "#/definitions/Json"
+        },
+        "meta": {
+          "$ref": "#/definitions/DashboardMeta"
+        }
+      },
+      "x-go-name": "DashboardFullWithMeta",
+      "x-go-package": "github.com/grafana/grafana/pkg/api/dtos"
+    },
+    "Json": {
+      "type": "object",
+      "x-go-package": "github.com/grafana/grafana/pkg/components/simplejson"
+    }
+  },
+  "responses": {
+    "forbiddenError": {
+      "description": "Access Denied",
+      "schema": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "description": "a human readable version of the error",
+            "type": "string",
+            "x-go-name": "Message"
+          }
+        }
+      }
+    },
+    "genericError": {
+      "description": "A GenericError is the default error message that is generated.\nFor certain status codes there are more appropriate error structures.",
+      "schema": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "description": "a human readable version of the error",
+            "type": "string",
+            "x-go-name": "Message"
+          }
+        }
+      }
+    },
+    "notFoundError": {
+      "description": "Not Found",
+      "schema": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "description": "a human readable version of the error",
+            "type": "string",
+            "x-go-name": "Message"
+          }
+        }
+      }
+    },
+    "okResponse": {
+      "description": "OK",
+      "schema": {
+        "type": "object"
+      }
+    },
+    "unauthorisedError": {
+      "description": "Unauthorized",
+      "schema": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "description": "a human readable version of the error",
+            "type": "string",
+            "x-go-name": "Message"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "basic": {
+      "type": "basic"
+    }
+  },
+  "x-tagGroups": [
+    {
+      "name": "General",
+      "tags": [
+        "dashboards"
+      ]
+    },
+    {
+      "name": "Server Administration",
+      "tags": [
+        "adminSettings",
+        "global_users"
+      ]
+    }
+  ]
+}
