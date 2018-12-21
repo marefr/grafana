@@ -54,6 +54,9 @@ func dashboardGuardianResponse(err error) Response {
 //
 // Will return the dashboard given the dashboard unique identifier (uid).
 //
+// Security:
+// basic:
+//
 // Responses:
 // 200: DashboardResponse
 // 401: unauthorisedError

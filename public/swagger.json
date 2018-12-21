@@ -122,6 +122,11 @@
     },
     "/dashboards/uid/{uid}": {
       "get": {
+        "security": [
+          {
+            "basic": []
+          }
+        ],
         "description": "Will return the dashboard given the dashboard unique identifier (uid).",
         "tags": [
           "dashboards"
