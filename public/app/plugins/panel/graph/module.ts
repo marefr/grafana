@@ -238,7 +238,15 @@ class GraphCtrl extends MetricsPanelCtrl {
       series.applySeriesOverrides(this.panel.seriesOverrides);
 
       if (series.unit) {
-        this.panel.yaxes[series.yaxis - 1].format = series.unit;
+        this.panel.yaxes.forEach(yaxis => {
+          if (yaxis.formatOverride === undefined) {
+            yaxis.formatOverride = true;
+          }
+
+          if (yaxis.formatOverride === true) {
+            yaxis.format = series.unit;
+          }
+        });
       }
     }
   }

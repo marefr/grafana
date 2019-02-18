@@ -9,7 +9,11 @@
 		<div ng-if="yaxis.show">
 			<div class="gf-form">
 				<label class="gf-form-label width-6">Unit</label>
-				<div class="gf-form-dropdown-typeahead max-width-20" ng-model="yaxis.format" dropdown-typeahead2="ctrl.unitFormats" dropdown-typeahead-on-select="ctrl.setUnitFormat(yaxis, $subItem)"></div>
+				<div class="gf-form" ng-if="yaxis.formatOverride === true">
+					<input type="text" class="gf-form-input max-width-12" disabled="disabled" ng-model="ctrl.customUnit" />
+					<a class="btn btn-secondary gf-form-btn" href="#" ng-click="ctrl.overrideUnit(yaxis)">override</a>
+				</div>
+				<div ng-if="yaxis.formatOverride !== true" class="gf-form-dropdown-typeahead max-width-20" ng-model="yaxis.format" dropdown-typeahead2="ctrl.unitFormats" dropdown-typeahead-on-select="ctrl.setUnitFormat(yaxis, $subItem)"></div>
 			</div>
 		</div>
 

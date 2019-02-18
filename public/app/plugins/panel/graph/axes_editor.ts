@@ -1,4 +1,5 @@
 import { getValueFormats } from '@grafana/ui';
+import _ from 'lodash';
 
 export class AxesEditorCtrl {
   panel: any;
@@ -8,6 +9,7 @@ export class AxesEditorCtrl {
   xAxisModes: any;
   xAxisStatOptions: any;
   xNameSegment: any;
+  customUnit: any;
 
   /** @ngInject */
   constructor(private $scope, private $q) {
@@ -46,11 +48,46 @@ export class AxesEditorCtrl {
         this.panel.xaxis.name = 'specify field';
       }
     }
+
+    for (let i = 0; i < this.panel.yaxes.length; i++) {
+      const yaxis = this.panel.yaxes[i];
+
+      if (yaxis.formatOverride === true) {
+        for (let j = 0; j < this.unitFormats.length; j++) {
+          const cat = this.unitFormats[j];
+          for (let k = 0; k < cat.submenu.length; k++) {
+            const format = cat.submenu[k];
+            if (format.value === yaxis.format) {
+              this.customUnit = format.text;
+              break;
+            }
+          }
+        }
+      }
+    }
   }
 
   setUnitFormat(axis, subItem) {
-    axis.format = subItem.value;
+    if (subItem.value === 'provided_by_ds') {
+      axis.formatOverride = true;
+    } else {
+      axis.format = subItem.value;
+    }
     this.panelCtrl.render();
+  }
+
+  overrideUnit(axis) {
+    axis.formatOverride = false;
+
+    const miscCat = _.find(this.unitFormats, { text: 'Misc' }) as any;
+    const dsFormat = _.find(miscCat.submenu, { value: 'provided_by_ds' });
+
+    if (!dsFormat) {
+      miscCat.submenu.push({
+        text: 'Provided by datasource',
+        value: 'provided_by_ds',
+      });
+    }
   }
 
   render() {
