@@ -582,6 +582,82 @@ describe('ElasticResponse', () => {
     });
   });
 
+  describe('No group by time percentiles', () => {
+    beforeEach(() => {
+      targets = [
+        {
+          refId: 'A',
+          metrics: [
+            {
+              field: '@value',
+              id: '1',
+              meta: {},
+              settings: {
+                percents: [75, 99],
+              },
+              type: 'percentiles',
+            },
+          ],
+          bucketAggs: [{ id: '2', type: 'terms', field: 'host' }],
+        },
+      ];
+
+      response = {
+        responses: [
+          {
+            aggregations: {
+              '2': {
+                buckets: [
+                  {
+                    '1': {
+                      values: {
+                        '75.0': 50,
+                        '99.0': 125,
+                      },
+                    },
+                    key: 'server-1',
+                    doc_count: 369,
+                  },
+                  {
+                    '1': {
+                      values: {
+                        '75.0': 500,
+                        '99.0': 1200,
+                      },
+                    },
+                    key: 'server-2',
+                    doc_count: 200,
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      };
+
+      result = new ElasticResponse(targets, response).getTimeSeries();
+    });
+
+    it('should return table', () => {
+      console.log(JSON.stringify(result));
+      expect(result.data.length).toBe(1);
+      expect(result.data[0].type).toBe('table');
+      expect(result.data[0].columns.length).toBe(3);
+      expect(result.data[0].columns[0].text).toBe('host');
+      expect(result.data[0].columns[1].text).toBe('p75.0 @value');
+      expect(result.data[0].columns[2].text).toBe('p99.0 @value');
+
+      expect(result.data[0].rows.length).toBe(2);
+      expect(result.data[0].rows[0][0]).toBe('server-1');
+      expect(result.data[0].rows[0][1]).toBe(50);
+      expect(result.data[0].rows[0][2]).toBe(125);
+
+      expect(result.data[0].rows[1][0]).toBe('server-2');
+      expect(result.data[0].rows[1][1]).toBe(500);
+      expect(result.data[0].rows[1][2]).toBe(1200);
+    });
+  });
+
   describe('Multiple metrics of same type', () => {
     beforeEach(() => {
       targets = [
