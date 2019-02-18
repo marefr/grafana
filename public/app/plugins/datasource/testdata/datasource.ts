@@ -59,6 +59,7 @@ export class TestDataDatasource implements DataSourceApi<TestDataQuery> {
               data.push({
                 target: series.name,
                 datapoints: series.points,
+                unit: 'percent',
               });
             }
           });
