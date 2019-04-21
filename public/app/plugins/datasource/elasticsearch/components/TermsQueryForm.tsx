@@ -11,13 +11,24 @@ export interface TermsQueryFormState {
   field: string;
   query: string;
   size: string;
+  orderBy: string;
+  order: string;
 }
 
 const defaultState: TermsQueryFormState = {
   field: '',
   query: '',
   size: '',
+  orderBy: '_term',
+  order: 'asc',
 };
+
+const orderByOptions: SelectOptionItem[] = [
+  { value: '_term', label: 'Term value' },
+  { value: '_count', label: 'Doc count' },
+];
+
+const orderOptions: SelectOptionItem[] = [{ value: 'asc', label: 'Ascending' }, { value: 'desc', label: 'Descending' }];
 
 export class TermsQueryForm extends PureComponent<TermsQueryFormProps, TermsQueryFormState> {
   constructor(props: TermsQueryFormProps) {
@@ -31,7 +42,7 @@ export class TermsQueryForm extends PureComponent<TermsQueryFormProps, TermsQuer
 
   triggerChange() {
     const { onChange } = this.props;
-    const { field, query, size } = this.state;
+    const { field, query, size, orderBy, order } = this.state;
     const termsQuery: any = {
       find: 'terms',
       field,
@@ -47,6 +58,14 @@ export class TermsQueryForm extends PureComponent<TermsQueryFormProps, TermsQuer
 
     if (defaultState.size !== size) {
       termsQuery.size = Number.parseInt(size, 10);
+    }
+
+    if (defaultState.orderBy !== orderBy) {
+      termsQuery.orderBy = orderBy;
+    }
+
+    if (defaultState.order !== order) {
+      termsQuery.order = order;
     }
 
     onChange(termsQuery, `Terms(${field})`);
@@ -83,9 +102,39 @@ export class TermsQueryForm extends PureComponent<TermsQueryFormProps, TermsQuer
     this.triggerChange();
   };
 
+  onOrderByChange = (item: SelectOptionItem) => {
+    let { order } = this.state;
+    const orderBy = item.value;
+
+    if (orderBy === '_count') {
+      order = 'desc';
+    }
+
+    this.setState(
+      {
+        orderBy,
+        order,
+      },
+      () => {
+        this.triggerChange();
+      }
+    );
+  };
+
+  onOrderChange = (item: SelectOptionItem) => {
+    this.setState(
+      {
+        order: item.value,
+      },
+      () => {
+        this.triggerChange();
+      }
+    );
+  };
+
   render() {
     const { fields } = this.props;
-    const { field, query = '', size } = this.state;
+    const { field, query = '', size, orderBy, order } = this.state;
     return (
       <>
         <div className="form-field">
@@ -111,6 +160,23 @@ export class TermsQueryForm extends PureComponent<TermsQueryFormProps, TermsQuer
             onChange={this.onSizeChange}
             type="number"
             value={size}
+          />
+        </div>
+        <div className="form-field">
+          <FormLabel className="query-keyword">Order By</FormLabel>
+          <Select
+            placeholder="Choose order"
+            options={orderByOptions}
+            value={orderByOptions.find(o => o.value === orderBy)}
+            onChange={this.onOrderByChange}
+            width={11}
+          />
+          <Select
+            placeholder="Choose order"
+            options={orderOptions}
+            value={orderOptions.find(o => o.value === order)}
+            onChange={this.onOrderChange}
+            width={11}
           />
         </div>
       </>

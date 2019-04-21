@@ -86,4 +86,55 @@ describe('TermsQueryForm', () => {
     });
     expect(props.onChange.mock.calls[0][1]).toBe('Terms(field.a)');
   });
+
+  it('when changing order by to term value should trigger change event', () => {
+    const props = {
+      onChange: jest.fn(),
+      query: { field: 'field.a' },
+    };
+    const { instance } = setup(props);
+    props.onChange.mockReset();
+    instance.onOrderByChange({ value: '_term', label: 'Term value' });
+    expect(props.onChange.mock.calls.length).toBe(1);
+    expect(props.onChange.mock.calls[0][0]).toEqual({
+      find: 'terms',
+      field: 'field.a',
+    });
+    expect(props.onChange.mock.calls[0][1]).toBe('Terms(field.a)');
+  });
+
+  it('when changing order by to doc count should trigger change event', () => {
+    const props = {
+      onChange: jest.fn(),
+      query: { field: 'field.a' },
+    };
+    const { instance } = setup(props);
+    props.onChange.mockReset();
+    instance.onOrderByChange({ value: '_count', label: 'Doc Count' });
+    expect(props.onChange.mock.calls.length).toBe(1);
+    expect(props.onChange.mock.calls[0][0]).toEqual({
+      find: 'terms',
+      field: 'field.a',
+      orderBy: '_count',
+      order: 'desc',
+    });
+    expect(props.onChange.mock.calls[0][1]).toBe('Terms(field.a)');
+  });
+
+  it('when changing order to descending should trigger change event', () => {
+    const props = {
+      onChange: jest.fn(),
+      query: { field: 'field.a' },
+    };
+    const { instance } = setup(props);
+    props.onChange.mockReset();
+    instance.onOrderChange({ value: 'desc', label: 'Descending' });
+    expect(props.onChange.mock.calls.length).toBe(1);
+    expect(props.onChange.mock.calls[0][0]).toEqual({
+      find: 'terms',
+      field: 'field.a',
+      order: 'desc',
+    });
+    expect(props.onChange.mock.calls[0][1]).toBe('Terms(field.a)');
+  });
 });

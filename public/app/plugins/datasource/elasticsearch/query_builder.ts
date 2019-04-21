@@ -347,23 +347,22 @@ export class ElasticQueryBuilder {
       size = queryDef.size;
     }
 
+    let orderBy = queryDef.orderBy ? queryDef.orderBy : '_term';
+    if (this.esVersion >= 60 && orderBy === '_term') {
+      orderBy = '_key';
+    }
+    const order = {};
+    order[orderBy] = queryDef.order ? queryDef.order : 'asc';
+
     query.aggs = {
       '1': {
         terms: {
           field: queryDef.field,
           size: size,
-          order: {
-            _term: 'asc',
-          },
+          order,
         },
       },
     };
-
-    if (this.esVersion >= 60) {
-      query.aggs['1'].terms.order = {
-        _key: 'asc',
-      };
-    }
 
     return query;
   }

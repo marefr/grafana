@@ -477,17 +477,49 @@ describe('ElasticQueryBuilder', () => {
     expect(query.query.bool.filter[5].bool.must_not.regexp['key6']).toBe('value6');
   });
 
-  it('getTermsQuery should set correct sorting', () => {
+  it('default getTermsQuery should set correct sorting', () => {
     const query = builder.getTermsQuery({});
     expect(query.aggs['1'].terms.order._term).toBe('asc');
   });
 
-  it('getTermsQuery es6.x should set correct sorting', () => {
+  it('default getTermsQuery es6.x should set correct sorting', () => {
     const builder6x = new ElasticQueryBuilder({
       timeField: '@timestamp',
       esVersion: 60,
     });
     const query = builder6x.getTermsQuery({});
     expect(query.aggs['1'].terms.order._key).toBe('asc');
+  });
+
+  it('custom getTermsQuery should set correct order by and sorting', () => {
+    const query = builder.getTermsQuery({
+      orderBy: '_count',
+      order: 'desc',
+    });
+    expect(query.aggs['1'].terms.order._count).toBe('desc');
+  });
+
+  it('custom getTermsQuery es6.xy should set correct order by and sorting', () => {
+    const builder6x = new ElasticQueryBuilder({
+      timeField: '@timestamp',
+      esVersion: 60,
+    });
+    const query = builder6x.getTermsQuery({
+      orderBy: '_count',
+      order: 'desc',
+    });
+    expect(query.aggs['1'].terms.order._count).toBe('desc');
+  });
+
+  it('custom getTermsQuery es6.xy should set correct order by and sorting', () => {
+    const builder6x = new ElasticQueryBuilder({
+      timeField: '@timestamp',
+      esVersion: 60,
+    });
+    const query = builder6x.getTermsQuery({
+      orderBy: '_term',
+      order: 'desc',
+    });
+    expect(query.aggs['1'].terms.order._key).toBe('desc');
   });
 });
