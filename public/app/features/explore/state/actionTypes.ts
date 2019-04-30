@@ -15,7 +15,6 @@ import {
   ExploreItemState,
   HistoryItem,
   RangeScanner,
-  ResultType,
   QueryTransaction,
   ExploreUIState,
 } from 'app/types/explore';
@@ -145,7 +144,6 @@ export interface QueryTransactionFailurePayload {
 
 export interface QueryTransactionStartPayload {
   exploreId: ExploreId;
-  resultType: ResultType;
   rowIndex: number;
   transaction: QueryTransaction;
 }

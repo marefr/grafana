@@ -17,7 +17,7 @@ class QueryTransactionStatusItem extends PureComponent<QueryTransactionStatusIte
     const className = transaction.done ? 'query-transaction' : 'query-transaction query-transaction--loading';
     return (
       <div className={className}>
-        <div className="query-transaction__type">{transaction.resultType}:</div>
+        <div className="query-transaction__type">{transaction.queryType}:</div>
         <div className="query-transaction__duration">
           {transaction.done ? formatLatency(transaction.latency) : <ElapsedTime />}
         </div>
@@ -36,7 +36,7 @@ export default class QueryTransactionStatus extends PureComponent<QueryTransacti
     return (
       <div className="query-transactions">
         {transactions.map((t, i) => (
-          <QueryTransactionStatusItem key={`${t.rowIndex}:${t.resultType}`} transaction={t} />
+          <QueryTransactionStatusItem key={`${t.rowIndex}:${t.queryType}`} transaction={t} />
         ))}
       </div>
     );

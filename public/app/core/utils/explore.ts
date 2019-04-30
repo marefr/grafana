@@ -21,17 +21,11 @@ import {
   DataSourceApi,
   toSeriesData,
   guessFieldTypes,
+  QueryType,
+  DataQueryResponseData,
 } from '@grafana/ui';
 import TimeSeries from 'app/core/time_series2';
-import {
-  ExploreUrlState,
-  HistoryItem,
-  QueryTransaction,
-  ResultType,
-  QueryIntervals,
-  QueryOptions,
-  ResultGetter,
-} from 'app/types/explore';
+import { ExploreUrlState, HistoryItem, QueryTransaction, QueryIntervals, QueryOptions } from 'app/types/explore';
 import { LogsDedupStrategy, seriesDataToLogsModel } from 'app/core/logs_model';
 
 export const DEFAULT_RANGE = {
@@ -109,9 +103,9 @@ export async function getExploreUrl(
 }
 
 export function buildQueryTransaction(
+  queryType: QueryType,
   query: DataQuery,
   rowIndex: number,
-  resultType: ResultType,
   queryOptions: QueryOptions,
   range: TimeRange,
   queryIntervals: QueryIntervals,
@@ -133,9 +127,10 @@ export function buildQueryTransaction(
   // Using `format` here because it relates to the view panel that the request is for.
   // However, some datasources don't use `panelId + query.refId`, but only `panelId`.
   // Therefore panel id has to be unique.
-  const panelId = `${queryOptions.format}-${query.key}`;
+  const panelId = `${query.refId}-${query.key}`;
 
   const options = {
+    queryType,
     interval,
     intervalMs,
     panelId,
@@ -150,9 +145,9 @@ export function buildQueryTransaction(
   };
 
   return {
+    queryType,
     options,
     query,
-    resultType,
     rowIndex,
     scanning,
     id: generateKey(), // reusing for unique ID
@@ -289,23 +284,33 @@ export function hasNonEmptyQuery<TQuery extends DataQuery = any>(queries: TQuery
   );
 }
 
-export function calculateResultsFromQueryTransactions(
-  queryTransactions: QueryTransaction[],
-  datasource: any,
-  graphInterval: number
-) {
-  const graphResult = _.flatten(
-    queryTransactions.filter(qt => qt.resultType === 'Graph' && qt.done && qt.result).map(qt => qt.result)
+export function calculateResultsFromQueryTransactions(queryTransactions: QueryTransaction[], graphInterval: number) {
+  const metrics: DataQueryResponseData[] = [];
+  const tables: DataQueryResponseData[] = [];
+  const metricTransactions = _.flatten(
+    queryTransactions.filter(qt => qt.queryType === QueryType.Metrics && qt.done && qt.result)
   );
-  const tableResult = mergeTablesIntoModel(
-    new TableModel(),
-    ...queryTransactions
-      .filter(qt => qt.resultType === 'Table' && qt.done && qt.result && qt.result.columns && qt.result.rows)
-      .map(qt => qt.result)
-  );
+
+  for (let n = 0; n < metricTransactions.length; n++) {
+    const metricTransaction = metricTransactions[n];
+    if (metricTransaction.result) {
+      for (let i = 0; i < metricTransaction.result.length; i++) {
+        const result = metricTransaction.result[i];
+        if (result.hasOwnProperty('columns')) {
+          tables.push(result);
+        } else {
+          metrics.push(result);
+        }
+      }
+    }
+  }
+
+  const tableResult = mergeTablesIntoModel(new TableModel(), ...tables);
+  const graphResult = makeTimeSeriesList(metrics);
+
   const logsResult = seriesDataToLogsModel(
     _.flatten(
-      queryTransactions.filter(qt => qt.resultType === 'Logs' && qt.done && qt.result).map(qt => qt.result)
+      queryTransactions.filter(qt => qt.queryType === QueryType.Logs && qt.done && qt.result).map(qt => qt.result)
     ).map(r => guessFieldTypes(toSeriesData(r))),
     graphInterval
   );
@@ -325,36 +330,31 @@ export function getIntervals(range: TimeRange, lowLimit: string, resolution: num
   return kbn.calculateInterval(range, resolution, lowLimit);
 }
 
-export const makeTimeSeriesList: ResultGetter = (dataList, transaction, allTransactions) => {
+export function makeTimeSeriesList(seriesData: DataQueryResponseData[]) {
+  const result: TimeSeries[] = [];
+
   // Prevent multiple Graph transactions to have the same colors
   let colorIndexOffset = 0;
-  for (const other of allTransactions) {
-    // Only need to consider transactions that came before the current one
-    if (other === transaction) {
-      break;
-    }
-    // Count timeseries of previous query results
-    if (other.resultType === 'Graph' && other.done) {
-      colorIndexOffset += other.result.length;
-    }
-  }
-
-  return dataList.map((seriesData, index: number) => {
-    const datapoints = seriesData.datapoints || [];
-    const alias = seriesData.target;
-    const colorIndex = (colorIndexOffset + index) % colors.length;
+  for (let n = 0; n < seriesData.length; n++) {
+    const series = seriesData[n];
+    const datapoints = series.datapoints || [];
+    const alias = series.target;
+    const colorIndex = colorIndexOffset % colors.length;
     const color = colors[colorIndex];
 
-    const series = new TimeSeries({
-      datapoints,
-      alias,
-      color,
-      unit: seriesData.unit,
-    });
+    result.push(
+      new TimeSeries({
+        datapoints,
+        alias,
+        color,
+        unit: series.unit,
+      })
+    );
+    colorIndexOffset++;
+  }
 
-    return series;
-  });
-};
+  return result;
+}
 
 /**
  * Update the query history. Side-effect: store history in local storage

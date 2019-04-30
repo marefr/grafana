@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react';
 import { hot } from 'react-hot-loader';
 import { connect } from 'react-redux';
-import { RawTimeRange, TimeRange, LogLevel, TimeZone, AbsoluteTimeRange } from '@grafana/ui';
+import { RawTimeRange, TimeRange, LogLevel, TimeZone, AbsoluteTimeRange, QueryType } from '@grafana/ui';
 
 import { ExploreId, ExploreItemState } from 'app/types/explore';
 import { LogsModel, LogsDedupStrategy } from 'app/core/logs_model';
@@ -105,7 +105,7 @@ function mapStateToProps(state: StoreState, { exploreId }) {
   const explore = state.explore;
   const item: ExploreItemState = explore[exploreId];
   const { logsHighlighterExpressions, logsResult, queryTransactions, scanning, scanRange, range } = item;
-  const loading = queryTransactions.some(qt => qt.resultType === 'Logs' && !qt.done);
+  const loading = queryTransactions.some(qt => qt.queryType === QueryType.Logs && !qt.done);
   const { showingLogs, dedupStrategy } = exploreItemUIStateSelector(item);
   const hiddenLogLevels = new Set(item.hiddenLogLevels);
   const dedupedResult = deduplicatedLogsSelector(item);

@@ -12,7 +12,6 @@ import {
   ensureQueries,
   generateEmptyQuery,
   hasNonEmptyQuery,
-  makeTimeSeriesList,
   updateHistory,
   buildQueryTransaction,
   serializeStateToUrlParam,
@@ -25,7 +24,6 @@ import {
 import { updateLocation } from 'app/core/actions';
 
 // Types
-import { ResultGetter } from 'app/types/explore';
 import { ThunkResult } from 'app/types';
 import {
   RawTimeRange,
@@ -41,7 +39,6 @@ import {
   ExploreId,
   ExploreUrlState,
   RangeScanner,
-  ResultType,
   QueryOptions,
   ExploreUIState,
   QueryTransaction,
@@ -560,16 +557,7 @@ export function queryTransactionSuccess(
  */
 export function runQueries(exploreId: ExploreId, ignoreUIState = false): ThunkResult<Promise<any>> {
   return (dispatch, getState) => {
-    const {
-      datasourceInstance,
-      queries,
-      showingLogs,
-      showingGraph,
-      showingTable,
-      datasourceError,
-      containerWidth,
-      queryType,
-    } = getState().explore[exploreId];
+    const { datasourceInstance, queries, datasourceError, containerWidth } = getState().explore[exploreId];
 
     if (datasourceError) {
       // let's not run any queries if data source is in a faulty state
@@ -587,47 +575,17 @@ export function runQueries(exploreId: ExploreId, ignoreUIState = false): ThunkRe
     const interval = datasourceInstance.interval;
 
     dispatch(runQueriesAction({ exploreId }));
-    // Keep table queries first since they need to return quickly
-    const tableQueriesPromise =
-      (ignoreUIState || showingTable) && queryType === QueryType.Metrics
-        ? dispatch(
-            runQueriesForType(
-              exploreId,
-              'Table',
-              {
-                interval,
-                format: 'table',
-                instant: true,
-                valueWithRefId: true,
-              },
-              (data: any[]) => data[0]
-            )
-          )
-        : undefined;
-    const typeQueriesPromise =
-      (ignoreUIState || showingGraph) && queryType === QueryType.Metrics
-        ? dispatch(
-            runQueriesForType(
-              exploreId,
-              'Graph',
-              {
-                interval,
-                format: 'time_series',
-                instant: false,
-                maxDataPoints: containerWidth,
-              },
-              makeTimeSeriesList
-            )
-          )
-        : undefined;
-    const logsQueriesPromise =
-      (ignoreUIState || showingLogs) && queryType === QueryType.Logs
-        ? dispatch(runQueriesForType(exploreId, 'Logs', { interval, format: 'logs' }))
-        : undefined;
+
+    const queriesPromise = dispatch(
+      runQueriesForType(exploreId, {
+        interval,
+        maxDataPoints: containerWidth,
+      })
+    );
 
     dispatch(stateSave());
 
-    return Promise.all([tableQueriesPromise, typeQueriesPromise, logsQueriesPromise]);
+    return Promise.all([queriesPromise]);
   };
 }
 
@@ -638,35 +596,30 @@ export function runQueries(exploreId: ExploreId, ignoreUIState = false): ThunkRe
  * @param queryOptions Query options as required by the datasource's `query()` function.
  * @param resultGetter Optional result extractor, e.g., if the result is a list and you only need the first element.
  */
-function runQueriesForType(
-  exploreId: ExploreId,
-  resultType: ResultType,
-  queryOptions: QueryOptions,
-  resultGetter?: ResultGetter
-): ThunkResult<void> {
+function runQueriesForType(exploreId: ExploreId, queryOptions: QueryOptions): ThunkResult<void> {
   return async (dispatch, getState) => {
-    const { datasourceInstance, eventBridge, queries, queryIntervals, range, scanning } = getState().explore[exploreId];
+    const { queryType, datasourceInstance, eventBridge, queries, queryIntervals, range, scanning } = getState().explore[
+      exploreId
+    ];
     const datasourceId = datasourceInstance.meta.id;
     // Run all queries concurrently
     const queryPromises = queries.map(async (query, rowIndex) => {
       const transaction = buildQueryTransaction(
+        queryType,
         query,
         rowIndex,
-        resultType,
         queryOptions,
         range,
         queryIntervals,
         scanning
       );
-      dispatch(queryTransactionStartAction({ exploreId, resultType, rowIndex, transaction }));
+      dispatch(queryTransactionStartAction({ exploreId, rowIndex, transaction }));
       try {
         const now = Date.now();
         const res = await datasourceInstance.query(transaction.options);
         eventBridge.emit('data-received', res.data || []);
         const latency = Date.now() - now;
-        const { queryTransactions } = getState().explore[exploreId];
-        const results = resultGetter ? resultGetter(res.data, transaction, queryTransactions) : res.data;
-        dispatch(queryTransactionSuccess(exploreId, transaction.id, results, latency, queries, datasourceId));
+        dispatch(queryTransactionSuccess(exploreId, transaction.id, res.data, latency, queries, datasourceId));
       } catch (response) {
         eventBridge.emit('data-error', response);
         dispatch(queryTransactionFailure(exploreId, transaction.id, response, datasourceId));

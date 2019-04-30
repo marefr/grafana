@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react';
 import { hot } from 'react-hot-loader';
 import { connect } from 'react-redux';
 import moment from 'moment';
-import { TimeRange, TimeZone, AbsoluteTimeRange } from '@grafana/ui';
+import { TimeRange, TimeZone, AbsoluteTimeRange, QueryType } from '@grafana/ui';
 
 import { ExploreId, ExploreItemState } from 'app/types/explore';
 import { StoreState } from 'app/types';
@@ -72,7 +72,7 @@ function mapStateToProps(state: StoreState, { exploreId }) {
   const { split } = explore;
   const item: ExploreItemState = explore[exploreId];
   const { graphResult, queryTransactions, range, showingGraph, showingTable } = item;
-  const loading = queryTransactions.some(qt => qt.resultType === 'Graph' && !qt.done);
+  const loading = queryTransactions.some(qt => qt.queryType === QueryType.Metrics && !qt.done);
   return { graphResult, loading, range, showingGraph, showingTable, split, timeZone: getTimeZone(state.user) };
 }
 

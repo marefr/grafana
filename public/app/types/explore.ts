@@ -322,9 +322,7 @@ export interface QueryIntervals {
 
 export interface QueryOptions {
   interval: string;
-  format: string;
   hinting?: boolean;
-  instant?: boolean;
   valueWithRefId?: boolean;
   maxDataPoints?: number;
 }
@@ -336,9 +334,9 @@ export interface QueryTransaction {
   hints?: QueryHint[];
   latency: number;
   options: any;
+  queryType: QueryType;
   query: DataQuery;
-  result?: any; // Table model / Timeseries[] / Logs
-  resultType: ResultType;
+  result?: DataQueryResponseData[];
   rowIndex: number;
   scanning?: boolean;
 }
@@ -357,5 +355,3 @@ export interface TextMatch {
   length: number;
   end: number;
 }
-
-export type ResultType = 'Graph' | 'Logs' | 'Table';

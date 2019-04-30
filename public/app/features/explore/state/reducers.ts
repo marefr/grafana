@@ -371,11 +371,11 @@ export const itemReducer = reducerFactory<ExploreItemState>({} as ExploreItemSta
   .addMapper({
     filter: queryTransactionStartAction,
     mapper: (state, action): ExploreItemState => {
-      const { queryTransactions } = state;
-      const { resultType, rowIndex, transaction } = action.payload;
+      const { queryTransactions, queryType } = state;
+      const { rowIndex, transaction } = action.payload;
       // Discarding existing transactions of same type
       const remainingTransactions = queryTransactions.filter(
-        qt => !(qt.resultType === resultType && qt.rowIndex === rowIndex)
+        qt => !(qt.queryType === queryType && qt.rowIndex === rowIndex)
       );
 
       // Append new transaction
@@ -392,13 +392,9 @@ export const itemReducer = reducerFactory<ExploreItemState>({} as ExploreItemSta
   .addMapper({
     filter: queryTransactionSuccessAction,
     mapper: (state, action): ExploreItemState => {
-      const { datasourceInstance, queryIntervals } = state;
+      const { queryIntervals } = state;
       const { history, queryTransactions } = action.payload;
-      const results = calculateResultsFromQueryTransactions(
-        queryTransactions,
-        datasourceInstance,
-        queryIntervals.intervalMs
-      );
+      const results = calculateResultsFromQueryTransactions(queryTransactions, queryIntervals.intervalMs);
 
       return {
         ...state,
@@ -413,7 +409,7 @@ export const itemReducer = reducerFactory<ExploreItemState>({} as ExploreItemSta
   .addMapper({
     filter: removeQueryRowAction,
     mapper: (state, action): ExploreItemState => {
-      const { datasourceInstance, queries, queryIntervals, queryTransactions, queryKeys } = state;
+      const { queries, queryIntervals, queryTransactions, queryKeys } = state;
       const { index } = action.payload;
 
       if (queries.length <= 1) {
@@ -425,11 +421,7 @@ export const itemReducer = reducerFactory<ExploreItemState>({} as ExploreItemSta
 
       // Discard transactions related to row query
       const nextQueryTransactions = queryTransactions.filter(qt => nextQueries.some(nq => nq.key === qt.query.key));
-      const results = calculateResultsFromQueryTransactions(
-        nextQueryTransactions,
-        datasourceInstance,
-        queryIntervals.intervalMs
-      );
+      const results = calculateResultsFromQueryTransactions(nextQueryTransactions, queryIntervals.intervalMs);
 
       return {
         ...state,
@@ -488,44 +480,40 @@ export const itemReducer = reducerFactory<ExploreItemState>({} as ExploreItemSta
   .addMapper({
     filter: toggleGraphAction,
     mapper: (state): ExploreItemState => {
-      const showingGraph = !state.showingGraph;
-      let nextQueryTransactions = state.queryTransactions;
-      if (!showingGraph) {
-        // Discard transactions related to Graph query
-        nextQueryTransactions = state.queryTransactions.filter(qt => qt.resultType !== 'Graph');
-      }
+      // const showingGraph = !state.showingGraph;
+      const nextQueryTransactions = state.queryTransactions;
+      // if (!showingGraph) {
+      //   // Discard transactions related to Graph query
+      //   nextQueryTransactions = state.queryTransactions.filter(qt => qt.queryType !== '');
+      // }
       return { ...state, queryTransactions: nextQueryTransactions };
     },
   })
   .addMapper({
     filter: toggleLogsAction,
     mapper: (state): ExploreItemState => {
-      const showingLogs = !state.showingLogs;
-      let nextQueryTransactions = state.queryTransactions;
-      if (!showingLogs) {
-        // Discard transactions related to Logs query
-        nextQueryTransactions = state.queryTransactions.filter(qt => qt.resultType !== 'Logs');
-      }
+      // const showingLogs = !state.showingLogs;
+      const nextQueryTransactions = state.queryTransactions;
+      // if (!showingLogs) {
+      // // Discard transactions related to Logs query
+      // nextQueryTransactions = state.queryTransactions.filter(qt => qt.resultType !== 'Logs');
+      // }
       return { ...state, queryTransactions: nextQueryTransactions };
     },
   })
   .addMapper({
     filter: toggleTableAction,
     mapper: (state): ExploreItemState => {
-      const showingTable = !state.showingTable;
-      if (showingTable) {
-        return { ...state, queryTransactions: state.queryTransactions };
-      }
+      // const showingTable = !state.showingTable;
+      // if (showingTable) {
+      return { ...state, queryTransactions: state.queryTransactions };
+      // }
 
       // Toggle off needs discarding of table queries and results
-      const nextQueryTransactions = state.queryTransactions.filter(qt => qt.resultType !== 'Table');
-      const results = calculateResultsFromQueryTransactions(
-        nextQueryTransactions,
-        state.datasourceInstance,
-        state.queryIntervals.intervalMs
-      );
+      // const nextQueryTransactions = state.queryTransactions.filter(qt => qt.resultType !== 'Table');
+      // const results = calculateResultsFromQueryTransactions(nextQueryTransactions, state.queryIntervals.intervalMs);
 
-      return { ...state, ...results, queryTransactions: nextQueryTransactions };
+      // return { ...state, ...results, queryTransactions: nextQueryTransactions };
     },
   })
   .addMapper({

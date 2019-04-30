@@ -9,6 +9,7 @@ import { toggleTable } from './state/actions';
 import Table from './Table';
 import Panel from './Panel';
 import TableModel from 'app/core/table_model';
+import { QueryType } from '@grafana/ui';
 
 interface TableContainerProps {
   exploreId: ExploreId;
@@ -43,7 +44,7 @@ function mapStateToProps(state: StoreState, { exploreId }) {
   const explore = state.explore;
   const item: ExploreItemState = explore[exploreId];
   const { queryTransactions, showingTable, tableResult } = item;
-  const loading = queryTransactions.some(qt => qt.resultType === 'Table' && !qt.done);
+  const loading = queryTransactions.some(qt => qt.queryType === QueryType.Metrics && !qt.done);
   return { loading, showingTable, tableResult };
 }
 

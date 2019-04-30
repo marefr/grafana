@@ -30,6 +30,9 @@ export function getQueryHints(query: string, series?: any[], datasource?: any): 
   if (series && series.length > 0) {
     series.forEach(s => {
       const datapoints: number[][] = s.datapoints;
+      if (!datapoints) {
+        return;
+      }
       if (query.indexOf('rate(') === -1 && datapoints.length > 1) {
         let increasing = false;
         const nonNullData = datapoints.filter(dp => dp[0] !== null);

@@ -126,6 +126,7 @@ export class PrometheusDatasource implements DataSourceApi<PromQuery> {
   }
 
   query(options: DataQueryRequest<PromQuery>) {
+    console.log(options);
     const start = this.getPrometheusTime(options.range.from, false);
     const end = this.getPrometheusTime(options.range.to, true);
 
@@ -137,6 +138,20 @@ export class PrometheusDatasource implements DataSourceApi<PromQuery> {
     for (const target of options.targets) {
       if (!target.expr || target.hide) {
         continue;
+      }
+
+      if (target.format === 'explore') {
+        target.format = 'time_series';
+        target.instant = false;
+        const instantTarget: any = _.cloneDeep(target);
+        instantTarget.format = 'table';
+        instantTarget.instant = true;
+        instantTarget.valueWithRefId = true;
+        delete instantTarget.maxDataPoints;
+        instantTarget.requestId += '_instant';
+        instantTarget.refId += '_instant';
+        activeTargets.push(instantTarget);
+        queries.push(this.createQuery(instantTarget, options, start, end));
       }
 
       activeTargets.push(target);
