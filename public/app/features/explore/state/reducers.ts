@@ -9,7 +9,7 @@ import {
   DEFAULT_UI_STATE,
 } from 'app/core/utils/explore';
 import { ExploreItemState, ExploreState, QueryTransaction, ExploreId, ExploreUpdateState } from 'app/types/explore';
-import { DataQuery } from '@grafana/ui/src/types';
+import { DataQuery, QueryType } from '@grafana/ui/src/types';
 import {
   HigherOrderAction,
   ActionTypes,
@@ -20,6 +20,7 @@ import {
   SplitCloseActionPayload,
   loadExploreDatasources,
   runQueriesAction,
+  changeQueryTypeAction,
 } from './actionTypes';
 import { reducerFactory } from 'app/core/redux';
 import {
@@ -102,6 +103,8 @@ export const makeExploreItemState = (): ExploreItemState => ({
   queryKeys: [],
   urlState: null,
   update: makeInitialUpdateState(),
+  supportedQueryTypes: [],
+  queryType: null,
 });
 
 /**
@@ -177,6 +180,13 @@ export const itemReducer = reducerFactory<ExploreItemState>({} as ExploreItemSta
     },
   })
   .addMapper({
+    filter: changeQueryTypeAction,
+    mapper: (state, action): ExploreItemState => {
+      const queryType = action.payload.queryType;
+      return { ...state, queryType: queryType };
+    },
+  })
+  .addMapper({
     filter: changeTimeAction,
     mapper: (state, action): ExploreItemState => {
       return { ...state, range: action.payload.range };
@@ -238,6 +248,18 @@ export const itemReducer = reducerFactory<ExploreItemState>({} as ExploreItemSta
       const supportsLogs = datasourceInstance.meta.logs;
       const supportsTable = datasourceInstance.meta.tables;
 
+      let dataType = QueryType.Metrics;
+      const supportedDataTypes: QueryType[] = [];
+
+      if (supportsGraph) {
+        supportedDataTypes.push(QueryType.Metrics);
+      }
+
+      if (supportsLogs) {
+        supportedDataTypes.push(QueryType.Logs);
+        dataType = QueryType.Logs;
+      }
+
       // Custom components
       const StartPage = datasourceInstance.components.ExploreStartPage;
 
@@ -250,6 +272,8 @@ export const itemReducer = reducerFactory<ExploreItemState>({} as ExploreItemSta
         StartPage,
         showingStartPage: Boolean(StartPage),
         queryKeys: getQueryKeys(state.queries, datasourceInstance),
+        supportedQueryTypes: supportedDataTypes,
+        queryType: dataType,
       };
     },
   })

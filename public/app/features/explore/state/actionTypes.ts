@@ -8,6 +8,7 @@ import {
   QueryFixAction,
   LogLevel,
   TimeRange,
+  QueryType,
 } from '@grafana/ui/src/types';
 import {
   ExploreId,
@@ -46,6 +47,11 @@ export interface AddQueryRowPayload {
   exploreId: ExploreId;
   index: number;
   query: DataQuery;
+}
+
+export interface ChangeQueryTypePayload {
+  exploreId: ExploreId;
+  queryType: QueryType;
 }
 
 export interface ChangeQueryPayload {
@@ -231,6 +237,11 @@ export const addQueryRowAction = actionCreatorFactory<AddQueryRowPayload>('explo
  * Loads a new datasource identified by the given name.
  */
 export const changeDatasourceAction = noPayloadActionCreatorFactory('explore/CHANGE_DATASOURCE').create();
+
+/**
+ * Change the query type of Explore.
+ */
+export const changeQueryTypeAction = actionCreatorFactory<ChangeQueryTypePayload>('explore/CHANGE_QUERY_TYPE').create();
 
 /**
  * Query change handler for the query row with the given index.

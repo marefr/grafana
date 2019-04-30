@@ -14,7 +14,15 @@ import { changeQuery, modifyQueries, runQueries, addQueryRow } from './state/act
 
 // Types
 import { StoreState } from 'app/types';
-import { DataQuery, ExploreDataSourceApi, QueryHint, QueryFixAction, DataSourceStatus, TimeRange } from '@grafana/ui';
+import {
+  DataQuery,
+  ExploreDataSourceApi,
+  QueryHint,
+  QueryFixAction,
+  DataSourceStatus,
+  TimeRange,
+  QueryType,
+} from '@grafana/ui';
 import { QueryTransaction, HistoryItem, ExploreItemState, ExploreId } from 'app/types/explore';
 import { Emitter } from 'app/core/utils/emitter';
 import { highlightLogsExpressionAction, removeQueryRowAction } from './state/actionTypes';
@@ -32,6 +40,7 @@ interface QueryRowProps {
   changeQuery: typeof changeQuery;
   className?: string;
   exploreId: ExploreId;
+  queryType: QueryType;
   datasourceInstance: ExploreDataSourceApi;
   datasourceStatus: DataSourceStatus;
   highlightLogsExpressionAction: typeof highlightLogsExpressionAction;
@@ -98,6 +107,7 @@ export class QueryRow extends PureComponent<QueryRowProps> {
 
   render() {
     const {
+      queryType,
       datasourceInstance,
       history,
       index,
@@ -122,6 +132,7 @@ export class QueryRow extends PureComponent<QueryRowProps> {
         <div className="query-row-field flex-shrink-1">
           {QueryField ? (
             <QueryField
+              queryType={queryType}
               datasource={datasourceInstance}
               datasourceStatus={datasourceStatus}
               query={query}
@@ -134,6 +145,7 @@ export class QueryRow extends PureComponent<QueryRowProps> {
             />
           ) : (
             <QueryEditor
+              queryType={queryType}
               datasource={datasourceInstance}
               error={queryError}
               onQueryChange={this.onChangeQuery}
@@ -169,9 +181,10 @@ export class QueryRow extends PureComponent<QueryRowProps> {
 function mapStateToProps(state: StoreState, { exploreId, index }: QueryRowProps) {
   const explore = state.explore;
   const item: ExploreItemState = explore[exploreId];
-  const { datasourceInstance, history, queries, queryTransactions, range, datasourceError } = item;
+  const { queryType, datasourceInstance, history, queries, queryTransactions, range, datasourceError } = item;
   const query = queries[index];
   return {
+    queryType,
     datasourceInstance,
     history,
     query,

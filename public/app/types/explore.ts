@@ -10,6 +10,7 @@ import {
   ExploreStartPageProps,
   LogLevel,
   TimeRange,
+  QueryType,
 } from '@grafana/ui';
 
 import { Emitter, TimeSeries } from 'app/core/core';
@@ -258,6 +259,9 @@ export interface ExploreItemState {
   urlState: ExploreUrlState;
 
   update: ExploreUpdateState;
+
+  supportedQueryTypes: QueryType[];
+  queryType: QueryType;
 }
 
 export interface ExploreUpdateState {

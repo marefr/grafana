@@ -183,6 +183,7 @@ export enum DataSourceStatus {
 }
 
 export interface ExploreQueryFieldProps<DSType extends DataSourceApi, TQuery extends DataQuery> {
+  queryType: QueryType;
   datasource: DSType;
   datasourceStatus: DataSourceStatus;
   query: TQuery;
@@ -250,6 +251,11 @@ export interface DataQueryResponse {
   data: DataQueryResponseData[];
 }
 
+export enum QueryType {
+  Metrics = 'Metrics',
+  Logs = 'Logs',
+}
+
 export interface DataQuery {
   /**
    * A - Z
@@ -307,6 +313,7 @@ export interface DataQueryRequest<TQuery extends DataQuery = DataQuery> {
   intervalMs: number;
   maxDataPoints: number;
   scopedVars: ScopedVars;
+  queryType?: QueryType;
 
   // Request Timing
   startTime: number;

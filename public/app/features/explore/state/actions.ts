@@ -35,6 +35,7 @@ import {
   QueryHint,
   QueryFixAction,
   TimeRange,
+  QueryType,
 } from '@grafana/ui/src/types';
 import {
   ExploreId,
@@ -83,6 +84,7 @@ import {
   testDataSourceSuccessAction,
   testDataSourceFailureAction,
   loadExploreDatasources,
+  changeQueryTypeAction,
 } from './actionTypes';
 import { ActionOf, ActionCreator } from 'app/core/redux/actionCreatorFactory';
 import { LogsDedupStrategy } from 'app/core/logs_model';
@@ -131,6 +133,16 @@ export function changeDatasource(exploreId: ExploreId, datasource: string): Thun
 
     await dispatch(loadDatasource(exploreId, newDataSourceInstance));
 
+    dispatch(runQueries(exploreId));
+  };
+}
+
+/**
+ * Change the query type used in Explore.
+ */
+export function changeQueryType(exploreId: ExploreId, queryType: QueryType): ThunkResult<void> {
+  return dispatch => {
+    dispatch(changeQueryTypeAction({ exploreId, queryType }));
     dispatch(runQueries(exploreId));
   };
 }
@@ -554,11 +566,9 @@ export function runQueries(exploreId: ExploreId, ignoreUIState = false): ThunkRe
       showingLogs,
       showingGraph,
       showingTable,
-      supportsGraph,
-      supportsLogs,
-      supportsTable,
       datasourceError,
       containerWidth,
+      queryType,
     } = getState().explore[exploreId];
 
     if (datasourceError) {
@@ -579,7 +589,7 @@ export function runQueries(exploreId: ExploreId, ignoreUIState = false): ThunkRe
     dispatch(runQueriesAction({ exploreId }));
     // Keep table queries first since they need to return quickly
     const tableQueriesPromise =
-      (ignoreUIState || showingTable) && supportsTable
+      (ignoreUIState || showingTable) && queryType === QueryType.Metrics
         ? dispatch(
             runQueriesForType(
               exploreId,
@@ -595,7 +605,7 @@ export function runQueries(exploreId: ExploreId, ignoreUIState = false): ThunkRe
           )
         : undefined;
     const typeQueriesPromise =
-      (ignoreUIState || showingGraph) && supportsGraph
+      (ignoreUIState || showingGraph) && queryType === QueryType.Metrics
         ? dispatch(
             runQueriesForType(
               exploreId,
@@ -611,7 +621,7 @@ export function runQueries(exploreId: ExploreId, ignoreUIState = false): ThunkRe
           )
         : undefined;
     const logsQueriesPromise =
-      (ignoreUIState || showingLogs) && supportsLogs
+      (ignoreUIState || showingLogs) && queryType === QueryType.Logs
         ? dispatch(runQueriesForType(exploreId, 'Logs', { interval, format: 'logs' }))
         : undefined;
 

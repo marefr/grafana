@@ -8,10 +8,11 @@ import { getTimeSrv } from 'app/features/dashboard/services/TimeSrv';
 
 // Types
 import { Emitter } from 'app/core/utils/emitter';
-import { DataQuery, TimeRange } from '@grafana/ui';
+import { DataQuery, TimeRange, QueryType } from '@grafana/ui';
 import 'app/features/plugins/plugin_loader';
 
 interface QueryEditorProps {
+  queryType: QueryType;
   datasource: any;
   error?: string | JSX.Element;
   onExecuteQuery?: () => void;
@@ -30,12 +31,12 @@ export default class QueryEditor extends PureComponent<QueryEditorProps, any> {
       return;
     }
 
-    const { datasource, initialQuery, exploreEvents, range } = this.props;
+    const { queryType, datasource, initialQuery, exploreEvents, range } = this.props;
     this.initTimeSrv(range);
 
     const loader = getAngularLoader();
     const template = '<plugin-component type="query-ctrl"> </plugin-component>';
-    const target = { datasource: datasource.name, ...initialQuery };
+    const target = { ...initialQuery };
     const scopeProps = {
       ctrl: {
         datasource,
@@ -50,11 +51,15 @@ export default class QueryEditor extends PureComponent<QueryEditorProps, any> {
         events: exploreEvents,
         panel: { datasource, targets: [target] },
         dashboard: {},
+        queryType,
       },
     };
 
     this.component = loader.load(this.element, scopeProps, template);
-    this.props.onQueryChange(target);
+    setTimeout(() => {
+      this.props.onQueryChange(target);
+      this.props.onExecuteQuery();
+    }, 1);
   }
 
   componentWillUnmount() {
