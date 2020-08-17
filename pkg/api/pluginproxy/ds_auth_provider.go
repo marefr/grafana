@@ -3,6 +3,7 @@ package pluginproxy
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -78,6 +79,17 @@ func ApplyRoute(ctx context.Context, req *http.Request, proxyPath string, route 
 				req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 			}
 		}
+	}
+
+	if route.Body != nil {
+		interpolatedBody, err := InterpolateString(string(route.Body), data)
+		if err != nil {
+			logger.Error("Error interpolating proxy body", "error", err)
+			return
+		}
+
+		req.Body = ioutil.NopCloser(strings.NewReader(interpolatedBody))
+		req.ContentLength = int64(len(interpolatedBody))
 	}
 
 	logger.Info("Requesting", "url", req.URL.String())

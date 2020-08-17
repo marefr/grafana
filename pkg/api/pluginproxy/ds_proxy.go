@@ -213,6 +213,21 @@ func (proxy *DataSourceProxy) getDirector() func(req *http.Request) {
 		if proxy.ds.JsonData != nil && proxy.ds.JsonData.Get("oauthPassThru").MustBool() {
 			addOAuthPassThruAuth(proxy.ctx, req)
 		}
+
+		var body string
+		if req.Body != nil {
+			buffer, err := ioutil.ReadAll(req.Body)
+			if err == nil {
+				req.Body = ioutil.NopCloser(bytes.NewBuffer(buffer))
+				body = string(buffer)
+			}
+		}
+
+		logger.Info("Proxying outgoing request",
+			"uri", req.RequestURI,
+			"method", req.Method,
+			"headers", req.Header,
+			"body", body)
 	}
 }
 
@@ -290,6 +305,7 @@ func (proxy *DataSourceProxy) logRequest() {
 		"datasource", proxy.ds.Type,
 		"uri", proxy.ctx.Req.RequestURI,
 		"method", proxy.ctx.Req.Request.Method,
+		"headers", proxy.ctx.Req.Request.Header,
 		"body", body)
 }
 

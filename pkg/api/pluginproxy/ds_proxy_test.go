@@ -67,6 +67,11 @@ func TestDSRouteRule(t *testing.T) {
 							{Name: "x-header", Content: "my secret {{.SecureJsonData.key}}"},
 						},
 					},
+					{
+						Path: "api/body",
+						URL:  "http://www.test.com",
+						Body: []byte(`{ "url": "{{.JsonData.dynamicUrl}}", "secret": "{{.SecureJsonData.key}}"	}`),
+					},
 				},
 			}
 
@@ -113,6 +118,19 @@ func TestDSRouteRule(t *testing.T) {
 				Convey("should add headers and interpolate the url with query string parameters", func() {
 					So(req.URL.String(), ShouldEqual, "https://dynamic.grafana.com/some/method?apiKey=123")
 					So(req.Header.Get("x-header"), ShouldEqual, "my secret 123")
+				})
+			})
+
+			Convey("When matching route path and has dynamic body", func() {
+				proxy, err := NewDataSourceProxy(ds, plugin, ctx, "api/body", &setting.Cfg{})
+				So(err, ShouldBeNil)
+				proxy.route = plugin.Routes[4]
+				ApplyRoute(proxy.ctx.Req.Context(), req, proxy.proxyPath, proxy.route, proxy.ds)
+
+				Convey("should add interpolated body", func() {
+					content, err := ioutil.ReadAll(req.Body)
+					So(err, ShouldBeNil)
+					So(string(content), ShouldEqual, `{ "url": "https://dynamic.grafana.com", "secret": "123"	}`)
 				})
 			})
 
