@@ -133,4 +133,9 @@
 		</label>
 		<input type="number" class="gf-form-input max-width-12" empty-to-null ng-model="agg.settings.missing" ng-blur="onChangeInternal()" spellcheck='false'>
   </div>
+
+  <div class="gf-form offset-width-7" ng-if="agg.type === 'custom'">
+    <label class="gf-form-label width-10">Raw JSON</label>
+    <code-editor content="agg.raw" data-mode="json" data-max-lines=30></code-editor>
+  </div>
 </div>

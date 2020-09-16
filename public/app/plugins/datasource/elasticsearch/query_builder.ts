@@ -275,6 +275,7 @@ export class ElasticQueryBuilder {
 
       const aggField: any = {};
       let metricAgg: any = null;
+      let metricType = metric.type;
 
       if (queryDef.isPipelineAgg(metric.type)) {
         if (queryDef.isPipelineAggWithMultipleBucketPaths(metric.type)) {
@@ -314,6 +315,12 @@ export class ElasticQueryBuilder {
             continue;
           }
         }
+      } else if (queryDef.isCustomMetric(metric.type)) {
+        const rawString = metric.raw.replaceAll('\n', '');
+        const rawAgg = { ...JSON.parse(rawString) };
+        const keys = Object.keys(rawAgg);
+        metricType = keys[0];
+        metricAgg = rawAgg[metricType];
       } else {
         metricAgg = { field: metric.field };
       }
@@ -324,7 +331,7 @@ export class ElasticQueryBuilder {
         }
       }
 
-      aggField[metric.type] = metricAgg;
+      aggField[metricType] = metricAgg;
       nestedAggs.aggs[metric.id] = aggField;
     }
 

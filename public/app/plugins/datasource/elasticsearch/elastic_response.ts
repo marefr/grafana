@@ -94,6 +94,35 @@ export class ElasticResponse {
 
           break;
         }
+        case 'custom': {
+          const seriesMap: any = {};
+          for (i = 0; i < esAgg.buckets.length; i++) {
+            bucket = esAgg.buckets[i];
+            const flattenedProps = flatten(bucket[metric.id]);
+
+            for (const key in flattenedProps) {
+              if (Object.prototype.hasOwnProperty.call(flattenedProps, key)) {
+                const prop = flattenedProps[key];
+
+                if (!seriesMap[key]) {
+                  seriesMap[key] = {
+                    datapoints: [],
+                    metric: key,
+                    props: props,
+                    field: key,
+                  };
+                }
+                seriesMap[key].datapoints.push([prop, bucket.key]);
+              }
+            }
+          }
+
+          for (const key in seriesMap) {
+            if (Object.prototype.hasOwnProperty.call(seriesMap, key)) {
+              seriesList.push(seriesMap[key]);
+            }
+          }
+        }
         default: {
           newSeries = {
             datapoints: [],

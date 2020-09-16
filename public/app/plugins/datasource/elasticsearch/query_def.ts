@@ -79,6 +79,10 @@ export const metricAggTypes = [
     supportsMultipleBucketPaths: true,
     minVersion: 2,
   },
+  {
+    text: 'Custom Metric',
+    value: 'custom',
+  },
   { text: 'Raw Document (legacy)', value: 'raw_document', requiresField: false },
   { text: 'Raw Data', value: 'raw_data', requiresField: false },
   { text: 'Logs', value: 'logs', requiresField: false },
@@ -205,6 +209,10 @@ export function isPipelineAggWithMultipleBucketPaths(metricType: any) {
   }
 
   return false;
+}
+
+export function isCustomMetric(metricType: any) {
+  return metricType === 'custom';
 }
 
 export function getPipelineAggOptions(targets: any) {

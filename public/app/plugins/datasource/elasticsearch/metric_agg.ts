@@ -110,6 +110,9 @@ export class ElasticMetricAggCtrl {
           $scope.target.bucketAggs = [];
           break;
         }
+        case 'custom': {
+          $scope.settingsLinkText = 'Options';
+        }
       }
       if ($scope.aggDef.supportsInlineScript) {
         // I know this stores the inline script twice
@@ -170,6 +173,11 @@ export class ElasticMetricAggCtrl {
         ($scope.agg.type !== 'raw_document' || $scope.agg.type !== 'raw_data')
       ) {
         $scope.target.bucketAggs = [queryDef.defaultBucketAgg()];
+      }
+
+      if (queryDef.isCustomMetric($scope.agg.type)) {
+        $scope.showOptions = true;
+        $scope.agg.raw = `{\n  "<aggregation>": {\n  \n  }\n}`;
       }
 
       $scope.showVariables = queryDef.isPipelineAggWithMultipleBucketPaths($scope.agg.type);
