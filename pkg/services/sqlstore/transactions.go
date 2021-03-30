@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/VividCortex/mysqlerr"
+	"github.com/go-sql-driver/mysql"
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/util/errutil"
@@ -45,6 +47,17 @@ func inTransactionWithRetryCtx(ctx context.Context, engine *xorm.Engine, callbac
 	// special handling of database locked errors for sqlite, then we can retry 5 times
 	var sqlError sqlite3.Error
 	if errors.As(err, &sqlError) && retry < 5 && sqlError.Code == sqlite3.ErrLocked || sqlError.Code == sqlite3.ErrBusy {
+		if rollErr := sess.Rollback(); rollErr != nil {
+			return errutil.Wrapf(err, "Rolling back transaction due to error failed: %s", rollErr)
+		}
+
+		time.Sleep(time.Millisecond * time.Duration(10))
+		sqlog.Info("Database locked, sleeping then retrying", "error", err, "retry", retry)
+		return inTransactionWithRetry(callback, retry+1)
+	}
+
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && retry < 5 && mysqlErr.Number == mysqlerr.ER_LOCK_DEADLOCK {
 		if rollErr := sess.Rollback(); rollErr != nil {
 			return errutil.Wrapf(err, "Rolling back transaction due to error failed: %s", rollErr)
 		}
