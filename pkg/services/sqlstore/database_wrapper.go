@@ -15,6 +15,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/mattn/go-sqlite3"
 	"github.com/prometheus/client_golang/prometheus"
+	"xorm.io/xorm/contexts"
 	"xorm.io/xorm/dialects"
 )
 
@@ -103,4 +104,23 @@ func (hp *databaseQueryWrapperDriver) Parse(driverName, dataSourceName string) (
 		return nil, fmt.Errorf("could not find driver with name %s", hp.dbType)
 	}
 	return driver.Parse(driverName, dataSourceName)
+}
+
+type databaseMetricHook struct {
+}
+
+func (h *databaseMetricHook) BeforeProcess(c *contexts.ContextHook) (context.Context, error) {
+	return c.Ctx, nil
+}
+
+func (h *databaseMetricHook) AfterProcess(c *contexts.ContextHook) error {
+	status := "error"
+	// https://golang.org/pkg/database/sql/driver/#ErrSkip
+	if c.Err == nil || errors.Is(c.Err, driver.ErrSkip) {
+		status = "success"
+	}
+
+	databaseQueryHistogram.WithLabelValues(status).Observe(c.ExecuteTime.Seconds())
+
+	return nil
 }

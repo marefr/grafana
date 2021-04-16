@@ -104,6 +104,9 @@ func (ss *SQLStore) Init() error {
 		}
 	}
 
+	ss.engine.AddHook(&databaseTracingHook{})
+	ss.engine.AddHook(&databaseMetricHook{})
+
 	// Init repo instances
 	annotations.SetRepository(&SQLAnnotationRepo{})
 	annotations.SetAnnotationCleaner(&AnnotationCleanupService{batchSize: ss.Cfg.AnnotationCleanupJobBatchSize, log: log.New("annotationcleaner")})
