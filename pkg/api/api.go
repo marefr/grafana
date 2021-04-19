@@ -37,6 +37,7 @@ func (hs *HTTPServer) registerRoutes() {
 	authorize := acmiddleware.Middleware(hs.AccessControl)
 	quota := middleware.Quota(hs.QuotaService)
 	bind := binding.Bind
+	static := middleware.Static(hs.Cfg)
 
 	r := hs.RouteRegister
 
@@ -132,7 +133,7 @@ func (hs *HTTPServer) registerRoutes() {
 	r.Get("/api/login/ping", quota("session"), routing.Wrap(hs.LoginAPIPing))
 
 	// expose plugin file system assets
-	r.Get("/public/plugins/:pluginId/*", hs.GetPluginAssets)
+	r.Get("/public/plugins/:pluginId/*", static, hs.GetPluginAssets)
 
 	// authed api
 	r.Group("/api", func(apiRoute routing.RouteRegister) {

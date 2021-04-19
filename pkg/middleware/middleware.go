@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -33,8 +34,11 @@ func AddDefaultResponseHeaders(cfg *setting.Cfg) macaron.Handler {
 				return
 			}
 
-			if !strings.HasPrefix(c.Req.URL.Path, "/api/datasources/proxy/") ||
-				strings.HasPrefix(c.Req.URL.Path, "/public/plugins/") {
+			if StaticFromContext(c.Req.Context()) {
+				return
+			}
+
+			if !strings.HasPrefix(c.Req.URL.Path, "/api/datasources/proxy/") {
 				addNoCacheHeaders(c.Resp)
 			}
 
@@ -77,4 +81,33 @@ func addNoCacheHeaders(w macaron.ResponseWriter) {
 
 func addXFrameOptionsDenyHeader(w macaron.ResponseWriter) {
 	w.Header().Set("X-Frame-Options", "deny")
+}
+
+type contextKey struct{}
+
+var staticKey = contextKey{}
+
+// StaticFromContext returns true if a static resource has been served in the request.
+func StaticFromContext(ctx context.Context) bool {
+	val := ctx.Value(staticKey)
+	if val != nil {
+		return true
+	}
+
+	return false
+}
+
+// Static creates a middleware optimized for serving static resources.
+func Static(cfg *setting.Cfg) macaron.Handler {
+	return func(c *macaron.Context) {
+		ctx := context.WithValue(c.Req.Context(), staticKey, true)
+		c.Req.Request = c.Req.WithContext(ctx)
+		c.Next()
+
+		c.Resp.Header().Set("Cache-Control", "public, max-age=3600")
+
+		if cfg.Env == setting.Dev {
+			c.Resp.Header().Set("Cache-Control", "max-age=0, must-revalidate, no-cache")
+		}
+	}
 }
