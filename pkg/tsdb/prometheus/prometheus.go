@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opentracing/opentracing-go"
-
 	"net/http"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
@@ -18,6 +16,7 @@ import (
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/tsdb/interval"
+	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/api"
 	apiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
@@ -39,6 +38,26 @@ type basicAuthTransport struct {
 func (bat basicAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.SetBasicAuth(bat.username, bat.password)
 	return bat.Transport.RoundTrip(req)
+}
+
+func traceRoundTripper(next http.RoundTripper) http.RoundTripper {
+	return httpclient.RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		span, ctx := opentracing.StartSpanFromContext(req.Context(), "datasource.prometheus")
+		defer span.Finish()
+
+		if query := ctx.Value(queryContextKey); query != nil {
+			if pq, ok := query.(*PrometheusQuery); ok {
+				span.SetTag("expr", pq.Expr)
+				span.SetTag("start_unixnano", pq.Start.UnixNano())
+				span.SetTag("stop_unixnano", pq.End.UnixNano())
+			}
+		}
+
+		ctx = opentracing.ContextWithSpan(ctx, span)
+		req = req.WithContext(ctx)
+
+		return next.RoundTrip(req)
+	})
 }
 
 //nolint: staticcheck // plugins.DataPlugin deprecated
@@ -79,6 +98,8 @@ func (e *PrometheusExecutor) getClient(dsInfo *models.DataSource) (apiv1.API, er
 		}
 	}
 
+	cfg.RoundTripper = traceRoundTripper(cfg.RoundTripper)
+
 	client, err := api.NewClient(cfg)
 	if err != nil {
 		return nil, err
@@ -86,6 +107,10 @@ func (e *PrometheusExecutor) getClient(dsInfo *models.DataSource) (apiv1.API, er
 
 	return apiv1.NewAPI(client), nil
 }
+
+type contextKey struct{}
+
+var queryContextKey = contextKey{}
 
 //nolint: staticcheck // plugins.DataResponse deprecated
 func (e *PrometheusExecutor) DataQuery(ctx context.Context, dsInfo *models.DataSource,
@@ -113,13 +138,9 @@ func (e *PrometheusExecutor) DataQuery(ctx context.Context, dsInfo *models.DataS
 
 		plog.Debug("Sending query", "start", timeRange.Start, "end", timeRange.End, "step", timeRange.Step, "query", query.Expr)
 
-		span, ctx := opentracing.StartSpanFromContext(ctx, "alerting.prometheus")
-		span.SetTag("expr", query.Expr)
-		span.SetTag("start_unixnano", query.Start.UnixNano())
-		span.SetTag("stop_unixnano", query.End.UnixNano())
-		defer span.Finish()
+		reqCtx := context.WithValue(ctx, queryContextKey, query)
 
-		value, _, err := client.QueryRange(ctx, query.Expr, timeRange)
+		value, _, err := client.QueryRange(reqCtx, query.Expr, timeRange)
 
 		if err != nil {
 			return result, err
